@@ -1,0 +1,96 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+buildscript {
+  dependencies {
+    classpath 'org.postgresql:postgresql:42.7.1'
+    classpath 'org.flywaydb:flyway-database-postgresql:10.5.0'
+  }
+}
+
+plugins {
+  id 'org.springframework.boot' version '3.2.1'
+  id 'io.spring.dependency-management' version '1.1.4'
+  id 'org.jetbrains.kotlin.jvm' version '1.9.21'
+  id 'org.jetbrains.kotlin.plugin.spring' version '1.9.21'
+  id "org.jooq.jooq-codegen-gradle" version "3.19.1"
+  id "org.flywaydb.flyway" version "10.5.0"
+}
+
+group = 'com.msb.employee'
+version = '0.0.1-SNAPSHOT'
+
+java {
+  sourceCompatibility = '17'
+}
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  implementation 'org.springframework.boot:spring-boot-starter'
+  implementation 'org.jetbrains.kotlin:kotlin-reflect'
+  jooqCodegen 'org.postgresql:postgresql:42.7.1'
+  implementation 'org.postgresql:r2dbc-postgresql:1.0.4.RELEASE'
+  implementation 'org.jooq:jooq:3.19.1'
+
+  testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.withType(KotlinCompile) {
+  kotlinOptions {
+    freeCompilerArgs += '-Xjsr305=strict'
+    jvmTarget = '17'
+  }
+}
+
+tasks.named('test') {
+  useJUnitPlatform()
+}
+
+flyway {
+  driver = 'org.postgresql.Driver'
+  url = 'jdbc:postgresql://localhost:5432/msb'
+  user = 'admin'
+  password = 'admin'
+  schemas = ['public']
+  locations = ['classpath:db/migrations']
+  baselineOnMigrate = true
+}
+
+
+
+jooq {
+  configuration {
+    jdbc {
+      driver = 'org.postgresql.Driver'
+      url = 'jdbc:postgresql://localhost:5432/msb'
+      user = 'admin'
+      password = 'admin'
+    }
+
+    executions {
+      regular {
+        configuration {
+          generator {
+            database {
+              name = 'org.jooq.meta.postgres.PostgresDatabase'
+              inputSchema = 'public'
+              includes = 'employee'
+            }
+            generate {
+              deprecated = false
+              records = true
+              immutablePojos = true
+              fluentSetters = true
+            }
+            target {
+              packageName = 'com.msb.employee'
+              directory = 'build/generated-src/jooq/main'
+            }
+          }
+        }
+      }
+    }
+  }
+}
